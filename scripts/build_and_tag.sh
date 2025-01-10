@@ -1,21 +1,21 @@
 #!/bin/bash
 set -e
 
-# Define variables
-PROJECT_NAME="nginx-pagespeed"
-IMAGE_NAME="${PROJECT_NAME}"
-GIT_COMMIT=$(git rev-parse --short HEAD)
-BUILD_DATE=$(date +%Y%m%d-%H%M%S)
+# variables
+COMPOSE_FILE="docker-compose.yml"
+PROJECT_ROOT=$(dirname "$0")/..
 
-# Check if a tag was provided
-if [[ "$1" != "" ]]; then
-   TAG_NAME="$1"
-else
-  TAG_NAME="${BUILD_DATE}-${GIT_COMMIT}"
+# Ask user for tag when prompt for build image. If no tag is specified, then the default tag will be used.
+read -r -p "Enter the docker image tag for this build (or press Enter for default tag): " image_tag_name
+
+# Build and tag docker image with the tag provided by user, or using a default tag if empty string provided.
+"$PROJECT_ROOT"/scripts/build_and_tag.sh "$image_tag_name"
+
+if [ ! -f "$PROJECT_ROOT"/.env ]; then #Check if the .env file exits.
+   echo ".env file does not exists, creating one with default values from .env-example."
+   cp "$PROJECT_ROOT"/.env-example "$PROJECT_ROOT"/.env #copy .env-example to .env for the first time.
 fi
 
-# Build the docker image with tag
-docker build -t "${IMAGE_NAME}:${TAG_NAME}" .
+docker-compose -f "$PROJECT_ROOT/$COMPOSE_FILE" up --build -d --remove-orphans # docker compose command.
 
-echo "Docker image built and Tagged as ${IMAGE_NAME}:${TAG_NAME}"
-
+echo "Project setup complete." # Final message.
