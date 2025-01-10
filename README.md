@@ -1,1 +1,36 @@
-# Nginx with Pagespeed docker image\n\nThis project provides an optimized Nginx Docker image with the PageSpeed module and other useful extensions.\n\n## Features\n\n-   Optimized Nginx for high performance.\n-   PageSpeed enabled for automatic web page optimization.\n- Multi stage docker builds for minimal image size\n-   Modular Nginx configuration.\n-   Properly documented.\n-   Easy to set up and run with docker compose.\n- Automatic TLS certificate generation with self signed configuration. \n- Proper environment variable support.\n \n## Usage\n\n1.  Clone the repository.\n2.  Customize environment variable in `.env` file using `.env-example ` as a template.\n3.  Build and run the docker container using:\n   ```bash\n   docker-compose up --build -d\n   ```\n4.  Access the web server at `http://localhost` or `https://localhost`.\n\n## Advanced Customisation\n1. Modify the configurations in `config` folder and rebuild the docker images using `docker-compose up --build -d`\n2.  Modify the `scripts` for custom docker entrypoint and start up functionalities.\n\n## Important Notice\n  * Self signed certificates are generated when the container starts for the first time.\n\n## License\n\nThis project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.\n
+# Nginx with Pagespeed docker image
+
+This project provides an optimized Nginx Docker image with the PageSpeed module and other useful extensions.
+
+## Features
+
+-   Optimized Nginx for high performance.
+-   PageSpeed enabled for automatic web page optimization.
+-   Multi-stage docker builds for minimal image size
+-   Modular Nginx configuration.
+-   Properly documented.
+-   Easy to set up and run with docker compose.
+-   Automatic TLS certificate generation with self-signed configuration.
+-   Proper environment variable support.
+ 
+## Usage
+
+1.  Clone the repository.
+2.  Customize environment variables in `.env` file using `.env-example` as a template.
+3.  Build and run the docker container using:
+   ```bash
+   docker-compose up --build -d
+   ```
+4.  Access the web server at `http://localhost` or `https://localhost`.
+
+## Advanced Customisation
+1. Modify the configurations in `config` folder and rebuild the docker images using `docker-compose up --build -d`
+2.  Modify the `scripts` for custom docker entrypoint and startup functionalities.
+
+## Important Notice
+  * Self-signed certificates are generated when the container starts for the first time.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
