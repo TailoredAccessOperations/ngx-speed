@@ -16,9 +16,6 @@ ENV MAKE_J=${MAKE_J} \
     PAGESPEED_VERSION=${PAGESPEED_VERSION} \
     DEBIAN_FRONTEND=noninteractive
 
-# Set a DNS resolver.
-RUN echo "nameserver 1.1.1.2" > /etc/resolv.conf
-
 # Install only needed build dependencies in a single layer.
 # Use --no-install-recommends to install only min deps and save space.
 # && cleanup all apt related files to save space as soon as its not needed during the build.
@@ -144,8 +141,6 @@ RUN curl -L "https://github.com/elfkickers/elfkickers/releases/download/1.1.0/el
     tar -xzf elfkickers.tar.gz && \
     chmod +x /tmp/elfkickers/bin/strip
 
-
-
 # Stage 2: Final Image
 FROM debian:buster-slim
 
@@ -157,9 +152,6 @@ COPY --from=builder /tmp/elfkickers/bin/strip /usr/bin/strip
 
 # Install required system packages for runtime.
 RUN apt-get update && apt-get install -y --no-install-recommends procps && rm -rf /var/lib/apt/lists/*
-
-# Set a DNS resolver.
-RUN echo "nameserver 1.1.1.2" > /etc/resolv.conf
 
 # Create PageSpeed cache and set permissions. link log to stdout.
 RUN  mkdir -p /var/cache/ngx_pagespeed && \
