@@ -1,0 +1,144 @@
+# Define the upstream server, which can be overridden by environment variables.
+upstream backend {
+  zone backend 64K;
+  keepalive 32;
+  server ${BACKEND_HOST:-142.93.69.253}:${BACKEND_PORT:-3000};
+}
+
+server {
+    listen 80 reuseport;
+    server_name _;
+    # Redirect all HTTP requests to HTTPS
+    return 301 https://$host$request_uri;
+}
+
+
+server {
+    listen 443 ssl http2;
+     server_name _;
+     ssl_certificate /etc/nginx/certs/nginx.crt;
+     ssl_certificate_key /etc/nginx/certs/nginx.key;
+     ssl_protocols TLSv1.2 TLSv1.3;
+
+
+    #Specify charset
+  charset utf-8;
+
+
+  # Custom 404 page
+    #error_page 404 /404.html;
+    
+    # Enable pagespeed for all the server blocks
+    include /etc/nginx/conf.d/pagespeed-enable.conf;
+
+
+    # Proxy headers
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+
+
+
+  # PDF
+    location ~* \.pdf$ {
+      add_header Content-Disposition "inline; filename=$1";
+      add_header Content-Type "application/pdf";
+    }
+    # TXT
+    location ~* \.txt$ {
+      add_header Content-Disposition "inline; filename=$1";
+      add_header Content-Type "text/plain";
+    }
+
+    # Static Assets
+    location ~* \.(?:jpg|jpeg|gif|png|ico|cur|gz|svg|svgz|mp4|ogg|ogv|webp|webm|htc)$ {
+
+        default_type application/octet-stream;
+
+        try_files $uri @backend;
+
+        #Add a "HIT/MISS" cache header
+      add_header X-Cache-Status $upstream_cache_status always;
+
+      #CORS
+      add_header 'Access-Control-Allow-Origin' '*' always;
+      add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS, PUT' always;
+      add_header 'Access-Control-Allow-Headers' 'DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control' always;
+
+      include /etc/nginx/conf.d/cache-expiration.conf;
+
+       directio 8m;
+       directio_alignment 4k;
+
+      # Tell Nginx not to send out partial frames; this increases throughput
+      # since TCP frames are filled up before being sent out. (adds TCP_CORK)
+        tcp_nopush on;
+        tcp_nodelay on;
+    }
+
+    # API Routes
+  location /api/ {
+        proxy_pass http://backend;
+
+        #Add a "HIT/MISS" cache header
+        add_header X-Cache-Status $upstream_cache_status always;
+
+        #CORS
+        add_header 'Access-Control-Allow-Origin' '*' always;
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS, PUT' always;
+        add_header 'Access-Control-Allow-Headers' 'DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control' always;
+      
+        default_type application/octet-stream;
+
+        include /etc/nginx/conf.d/cache-expiration.conf;
+
+        include /etc/nginx/pagespeed/api.conf;
+        include /etc/nginx/proxy/basic.conf;
+    }
+
+
+    # This location block passes all requests not handled by the previous location blocks
+    # to the proxy backend
+    location / {
+      # Add a "HIT/MISS" cache header
+        add_header X-Cache-Status $upstream_cache_status always;
+
+        #CORS
+         add_header 'Access-Control-Allow-Origin' '*' always;
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS, PUT' always;
+        add_header 'Access-Control-Allow-Headers' 'DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control' always;
+  
+         default_type application/octet-stream;
+
+        include /etc/nginx/conf.d/cache-expiration.conf;
+
+        try_files $uri @backend; # forward all requests for unexistent files to the location named backend
+    }
+    
+    # location to serve files when using try_files if the path requested is not a real file
+     location @backend {
+    internal;
+      default_type application/octet-stream;
+        
+    # Add conditional cache headers for the selected files
+      if ($request_filename ~* \.(jpg|jpeg|gif|png|bmp|ico|pdf|flv|swf|txt|css|js|otf|eot|svg|ttf|woff|woff2|map)$) {
+         # Add a "HIT/MISS" cache header
+         add_header X-Cache-Status $upstream_cache_status always;
+        
+         #CORS
+        add_header 'Access-Control-Allow-Origin' '*' always;
+          add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS, PUT' always;
+          add_header 'Access-Control-Allow-Headers' 'DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control' always;
+         
+        include /etc/nginx/conf.d/cache-expiration.conf;
+
+        access_log off;
+       }
+    
+        include /etc/nginx/proxy/basic.conf;
+        proxy_pass http://backend;
+        proxy_pass_header Cache-Control;
+      }
+    
+  }

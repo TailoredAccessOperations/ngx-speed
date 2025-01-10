@@ -1,0 +1,151 @@
+#/etc/systemd/system/multi-user.target.wants/nginx.service
+[Unit]
+Description=The NGINX HTTP and reverse proxy server
+Documentation=man:nginx(8)
+After=syslog.target network-online.target remote-fs.target nss-lookup.target
+Wants=network-online.target
+
+# NOTES ABOUT THE StartLimitBurst OPTION:
+# systemd default is StartLimitBurst=5 (give up after 5 failed attempts)
+# if you do NOT set set this option systemd will attempt
+# to restart your service forever.
+
+# NOTES ABOUT THE StartLimitIntervalSec OPTION:
+# systemd default is set StartLimitIntervalSec=10 - Set it to 0
+# and systemd will attempt to restart your service forever.
+StartLimitIntervalSec=0
+
+[Service]
+Type=exec
+User=nginx
+Group=nginx
+# (file size)
+LimitFSIZE=infinity
+
+# (cpu time)
+LimitCPU=infinity
+
+# (virtual memory size)
+LimitAS=infinity
+
+# (locked-in-memory size)
+LimitMEMLOCK=infinity
+
+# (open files)
+LimitNOFILE=500000
+
+# (processes/threads)
+LimitNPROC=500000
+PIDFile=/var/run/nginx.pid
+RuntimeDirectory=nginx
+LogsDirectory=nginx
+CacheDirectory=nginx
+PermissionsStartOnly=true
+ExecStartPre=/bin/bash /etc/nginx/pid.sh
+ExecStartPre=/usr/sbin/nginx -t -c /etc/nginx/nginx.conf
+ExecStart=/usr/sbin/nginx -g 'daemon on; master_process on;'
+ExecReload=/usr/sbin/nginx -s reload
+#ExecStop=/bin/kill -s QUIT $MAINPID
+#ExecStop=/etc/init.d/nginx stop
+ExecStop=/usr/bin/fuser -k 80/tcp 443/tcp;kill -9 $(ps aux | grep '[n]ginx' | awk '{print $2}');killall -u nginx
+
+# NOTES ABOUT THE Restart=always OPTION:
+# By default, when you configure Restart=always systemd gives up
+# restarting your service if it fails to start more than 5 times
+# within a 10 seconds interval. Forever.
+# There are two [Unit] configuration options responsible for this
+# StartLimitBurst=5 and StartLimitIntervalSec=10
+
+# The simple fix that always works is to:
+# Set StartLimitIntervalSec=0 in [Unit] and do NOT add StartLimitBurst=5 in [Unit]
+# This way, systemd will attempt to restart your service FOREVER.
+Restart=always
+
+# NOTES ABOUT THE RestartSec OPTION:
+# By default, systemd attempts a restart after 100ms.
+# If you set RestartSec to restart after 3 seconds (RestartSec=3) then
+# the systemd default of [Unit] StartLimitBurst=5 and StartLimitIntervalSec=10 will never
+# have a chance to execute their tasks (reach 5 failed retries within 10 seconds)
+
+# The simple fix that always works is to:
+# Set StartLimitIntervalSec=0 in [Unit] and do NOT add StartLimitBurst=5 in [Unit] (As mentioned and explained above)
+# Then set RestartSec=1 - You should to set RestartSec to at least 1 second
+# to avoid putting too much stress on your server (if) when things start going wrong.
+RestartSec=1s
+
+#RuntimeMaxSec=3600s
+
+TimeoutSec=5s
+#WatchdogSec=5s
+#For WatchDog Apparently Doesn't Work
+#NotifyAccess=all
+
+BindReadOnlyPaths=/usr/sbin/nginx
+
+#BindReadOnlyPaths=/opt/web/ /etc/letsencrypt/ /proc
+
+ReadOnlyPaths=/
+ReadWritePaths=/var/ /run/ /etc/letsencrypt/ /opt/web/files/ /tmp/nginx/ /usr/sbin/nginx
+InaccessiblePaths=-/lost+found
+#NoExecPaths=/
+#ExecPaths=/usr/bin/serviced
+
+#Will overwrite TemporaryFileSystem=/:ro
+ProtectSystem=strict
+#ProtectSystem=full
+#Not needed with TemporaryFileSystem=/:ro
+ProtectHome=true
+
+#Breaks 443 Port Bind
+#PrivateTmp=true
+
+PrivateDevices=true
+ProtectControlGroups=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectProc=noaccess
+
+ProcSubset=pid
+#PrivateUsers=yes
+
+# Misc
+NoNewPrivileges=yes
+RestrictRealtime=true
+#MemoryDenyWriteExecute=true
+ProtectKernelLogs=true
+# Disables use of the personality(2) system call, which may have security bugs
+LockPersonality=true
+ProtectHostname=true
+RemoveIPC=true
+RestrictSUIDSGID=true
+ProtectClock=true
+ProtectProc=invisible
+RestrictNamespaces=yes
+
+StandardInput=null
+UMask=0077
+#DynamicUser=yes
+
+# Network
+#PrivateNetwork=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+# Allows only common service-related system calls
+SystemCallFilter=@system-service
+# When system call is disallowed, return error code instead of killing process 
+SystemCallErrorNumber=EPERM
+SystemCallArchitectures=native
+
+# capabilities
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+# Process may not gain any capabilities besides the one we just gave it
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+
+CapabilityBoundingSet=~CAP_LINUX_IMMUTABLE CAP_IPC_LOCK CAP_SYS_CHROOT CAP_BLOCK_SUSPEND CAP_LEASE 
+CapabilityBoundingSet=~CAP_SYS_ADMIN CAP_SYS_BOOT CAP_SYS_PACCT CAP_SYS_PTRACE CAP_SYS_RAWIO CAP_SYS_TIME CAP_SYS_TTY_CONFIG 
+CapabilityBoundingSet=~CAP_WAKE_ALARM  CAP_MAC_ADMIN CAP_MAC_OVERRIDE 
+CapabilityBoundingSet=~CAP_SETUID CAP_SETGID CAP_SETPCAP CAP_CHOWN CAP_NET_ADMIN 
+CapabilityBoundingSet=~CAP_CHOWN CAP_FSETID CAP_SETFCAP
+CapabilityBoundingSet=~CAP_DAC_OVERRIDE CAP_DAC_READ_SEARCH CAP_FOWNER CAP_IPC_OWNER
+
+[Install]

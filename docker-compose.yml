@@ -1,0 +1,29 @@
+version: "3.8"
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+      - "443:443"
+    container_name: nginx-pagespeed
+    env_file: .env
+    networks:
+      - secure-network
+    volumes:
+      - ./certs:/etc/nginx/certs
+
+    # Container Security
+    user: nginx:nginx
+
+  app:
+     image: busybox:latest
+     networks:
+      - secure-network
+     command: sh -c "while true; do sleep 5; done"
+
+networks:
+  secure-network:
+    driver: bridge
