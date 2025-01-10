@@ -1,0 +1,6 @@
+docker run --rm -it debian:buster-slim bash
+apt-get update
+apt-cache search linux-headers
+
+OPtimize this code and force these container to use 1.1.1.2 as dns and also setup package minimization, as well as gcc optiomizations, remove header from nginx source code, install sstrip from ELFKickers and strip the nginx binary and all its modules/includes as best as possible, then upx the nginx binary, add all imporements, make it mutlistage build, add 1.1.1.2 resolver on all stages, make the nginx compile contianer as small as possible, optimize it for compiling, make it multi threaded, up the ulimit, sysctls and everything to make sure the whole project is optimized.
+
